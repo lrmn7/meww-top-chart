@@ -6,22 +6,13 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // Get the most recent update time from either artists or tracks
-    const [latestArtist, latestTrack] = await Promise.all([
-      prisma.artistCurrent.findFirst({
-        orderBy: { lastUpdated: 'desc' },
-        select: { lastUpdated: true },
-      }),
-      prisma.trackCurrent.findFirst({
-        orderBy: { lastUpdated: 'desc' },
-        select: { lastUpdated: true },
-      }),
-    ]);
-    
-    const lastUpdated = latestArtist?.lastUpdated || latestTrack?.lastUpdated || null;
+    const latestTrack = await prisma.trackCurrent.findFirst({
+      orderBy: { lastUpdated: 'desc' },
+      select: { lastUpdated: true },
+    });
     
     return NextResponse.json({ 
-      lastUpdated: lastUpdated?.toISOString() || null,
+      lastUpdated: latestTrack?.lastUpdated?.toISOString() || null,
     });
   } catch (error) {
     console.error('Error fetching last updated:', error);
@@ -31,4 +22,3 @@ export async function GET() {
     );
   }
 }
-

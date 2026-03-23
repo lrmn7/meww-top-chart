@@ -1,20 +1,18 @@
 # Meww.me Top Chart
 
-> JSON API for Spotify top charts data, scraped from [Kworb.net](https://kworb.net) and enriched with Spotify, Last.fm, MusicBrainz, and Wikipedia metadata.
+> JSON API for Spotify top daily tracks data, scraped from [Kworb.net](https://kworb.net) and enriched with Spotify metadata.
 
 ## Overview
 
-Meww.me Top Chart is a **JSON-only API service** built with Next.js that scrapes Spotify chart data from Kworb.net, enriches it with metadata from multiple sources, and serves it through clean REST endpoints.
+Meww.me Top Chart is a **JSON-only API service** built with Next.js that scrapes Spotify daily track chart data from Kworb.net, enriches it with Spotify metadata (cover art, preview URL, Spotify link), and serves it through clean REST endpoints.
 
 ### Key Features
 
-- 📊 **Top Artists & Tracks**  Scraped from Kworb.net for 20 countries + global
-- 🎵 **Spotify Integration**  Automatic Spotify URL matching, play counts, and metadata
-- 🏷️ **Rich Metadata**  Genres, biographies, images, social links from Last.fm, MusicBrainz, and Wikipedia
-- 📈 **Historical Data**  Daily snapshots with rank changes and listener deltas
+- 🎵 **Top Daily Tracks**  Scraped from Kworb.net for 20 countries + global
+- 🎧 **Spotify Integration**  Automatic track matching with cover art, preview URLs, and Spotify links
+- 📈 **Historical Data**  Daily snapshots with rank changes
 - 🌍 **Multi-Country Support**  Global + 19 country-specific charts
 - 🔄 **Auto-Refresh** Cron-based data refresh via Vercel or manual trigger
-- 🧪 **Built-in API Tester**  Postman-style UI to explore and test endpoints
 
 ---
 
@@ -24,10 +22,10 @@ Meww.me Top Chart is a **JSON-only API service** built with Next.js that scrapes
 |-----------|-----------|
 | Framework | [Next.js 14](https://nextjs.org/) (App Router) |
 | Language | TypeScript |
-| Database | MySQL (production) / SQLite (development) |
+| Database | MySQL (production) / PostgreSQL / SQLite (development) |
 | ORM | [Prisma](https://www.prisma.io/) |
 | Scraping | [Cheerio](https://cheerio.js.org/) |
-| API Sources | Spotify Web API, Last.fm API, MusicBrainz API, Wikipedia |
+| API Source | Spotify Web API |
 | Deployment | Vercel / Hostinger Node.js |
 
 ---
@@ -38,7 +36,7 @@ Meww.me Top Chart is a **JSON-only API service** built with Next.js that scrapes
 
 - Node.js 18+
 - npm or yarn
-- MySQL database (or SQLite for local dev)
+- MySQL / PostgreSQL / SQLite database
 - [Spotify Developer](https://developer.spotify.com/dashboard) app credentials
 
 ### Installation
@@ -72,7 +70,6 @@ ADMIN_SECRET=your_secret_here
 SCRAPE_COUNTRIES=global,id,us,gb,jp,kr,de,fr,br,mx,in,au,es,it,ca,se,ph,tr,ar,nl
 
 # Limits
-TOP_ARTISTS_LIMIT=25
 TOP_TRACKS_LIMIT=25
 
 # Optional: Rate limit rotation (add up to 3 Spotify client pairs)
@@ -85,7 +82,17 @@ PORT=3301
 
 ### Database Setup
 
+Three schema variants are provided:
+- `prisma/schema.prisma` — MySQL (default)
+- `prisma/schema.postgresql.prisma` — PostgreSQL
+- `prisma/schema.sqlite.prisma` — SQLite (local dev)
+
+To switch database, copy the desired schema to `schema.prisma` and update `DATABASE_URL`.
+
 ```bash
+# Generate Prisma client
+npx prisma generate
+
 # Push schema to database
 npx prisma db push
 
@@ -108,38 +115,22 @@ npm start
 
 ## API Endpoints
 
-### Stats
+### Tracks
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/api/stats/artists` | Top artists with rank, listeners, metadata |
-| `GET` | `/api/stats/tracks` | Top tracks with daily/total streams |
+| `GET` | `/api/stats/tracks` | Top daily tracks with streams, rank, Spotify metadata |
+| `GET` | `/api/stats/tracks/history` | Track stream/rank history |
 | `GET` | `/api/stats/countries` | List of supported countries |
 | `GET` | `/api/stats/last-updated` | Timestamp of last data refresh |
-| `GET` | `/api/stats/artist/[artistId]` | Detailed artist info by Spotify ID |
-| `GET` | `/api/stats/artist/[artistId]/history` | Artist rank/listener history |
-| `GET` | `/api/stats/tracks/history` | Track stream history |
 
 ### Query Parameters
-
-#### `/api/stats/artists`
-| Param | Default | Description |
-|-------|---------|-------------|
-| `sortBy` | `rank` | Sort by `rank` or `dailyChange` |
-| `country` | `global` | Country code (e.g., `id`, `us`, `gb`) |
-| `limit` | `25` | Number of results |
 
 #### `/api/stats/tracks`
 | Param | Default | Description |
 |-------|---------|-------------|
-| `country` | `global` | Country code |
+| `country` | `global` | Country code (e.g., `id`, `us`, `gb`) |
 | `limit` | `25` | Number of results |
-
-#### `/api/stats/artist/[artistId]/history`
-| Param | Default | Description |
-|-------|---------|-------------|
-| `country` | `global` | Country code |
-| `days` | `30` | Number of days of history |
 
 #### `/api/stats/tracks/history`
 | Param | Default | Description |
@@ -159,23 +150,22 @@ npm start
 ### Example Response
 
 ```json
-GET /api/stats/artists?country=global&limit=2
+GET /api/stats/tracks?country=global&limit=2
 
 {
-  "artists": [
+  "tracks": [
     {
-      "artistId": "1Xyo4u8uXC1ZmMpatF05PJ",
-      "name": "The Weeknd",
+      "trackId": "2plbrEY59IikOBgBGLjaoe",
+      "name": "Die With A Smile",
+      "mainArtistName": "Lady Gaga, Bruno Mars",
       "rank": 1,
       "previousRank": 1,
       "rankDelta": 0,
-      "monthlyListeners": 115000000,
-      "listenersDelta": 250000,
+      "dailyStreams": 8500000,
+      "totalStreams": 3200000000,
       "imageUrl": "https://i.scdn.co/image/...",
-      "genres": ["canadian pop", "pop"],
-      "spotifyUrl": "https://open.spotify.com/artist/...",
-      "followers": 45000000,
-      "popularity": 96
+      "previewUrl": "https://p.scdn.co/mp3-preview/...",
+      "spotifyUrl": "https://open.spotify.com/track/..."
     }
   ]
 }
@@ -188,45 +178,30 @@ GET /api/stats/artists?country=global&limit=2
 ```
 src/
 ├── app/
-│   ├── page.tsx                  # API Explorer UI (Postman-style tester)
-│   ├── layout.tsx                # Root layout
 │   └── api/
 │       ├── cron/refresh/         # Data refresh endpoint
-│       ├── stats/
-│       │   ├── artists/          # Top artists API
-│       │   ├── tracks/           # Top tracks API
-│       │   ├── countries/        # Supported countries
-│       │   ├── last-updated/     # Last refresh timestamp
-│       │   └── artist/[id]/      # Artist detail + history
-│       └── ...
+│       └── stats/
+│           ├── tracks/           # Top tracks API
+│           ├── countries/        # Supported countries
+│           └── last-updated/     # Last refresh timestamp
 ├── lib/
 │   ├── db.ts                     # Prisma client singleton
 │   ├── types.ts                  # TypeScript interfaces
-│   ├── spotify.ts                # Spotify URL search utility
 │   ├── spotify/
 │   │   ├── auth.ts               # Multi-client Spotify auth with rotation
 │   │   └── metadata.ts           # Spotify metadata enrichment
 │   ├── services/
 │   │   └── statsProvider.ts      # Core data aggregation service
 │   └── scraping/
-│       ├── kworbArtists.ts       # Global top artists scraper
 │       ├── kworbTracks.ts        # Global top tracks scraper
 │       ├── kworbCountry.ts       # Multi-country chart scraper
 │       ├── kworbIndonesia.ts     # Indonesia-specific scraper
-│       ├── kworbScraper.ts       # Base Kworb scraping utilities
-│       ├── kworbArtistDetails.ts # Artist detail page scraper
-│       ├── lastfmGenres.ts       # Genre tagging from Last.fm
-│       ├── lastfmImages.ts       # Artist image fetching
-│       ├── lastfmTracks.ts       # Top tracks/albums from Last.fm
-│       ├── musicbrainz.ts        # MusicBrainz metadata (origin, links)
-│       ├── wikipediaBio.ts       # Artist biographies from Wikipedia
-│       ├── spotifyTrackData.ts   # Spotify track metadata
-│       ├── spotifyPlayCountService.ts  # Play count estimation
-│       └── spotifyWebScraper.ts  # Spotify web data scraping
+│       └── kworbScraper.ts       # Base Kworb scraping utilities
 ├── prisma/
 │   ├── schema.prisma             # MySQL schema (primary)
 │   ├── schema.mysql.prisma       # MySQL variant
-│   └── schema.postgresql.prisma  # PostgreSQL variant
+│   ├── schema.postgresql.prisma  # PostgreSQL variant
+│   └── schema.sqlite.prisma     # SQLite variant
 └── server.js                     # Custom server (Hostinger compatible)
 ```
 
@@ -235,29 +210,27 @@ src/
 ## Data Flow
 
 ```
-Kworb.net  ──scrape──▶  Raw Chart Data
+Kworb.net  ──scrape──▶  Raw Track Chart Data
                               │
-              ┌───────────────┼───────────────┐
-              ▼               ▼               ▼
-         Spotify API     Last.fm API     Wikipedia
-        (URLs, meta)    (genres, imgs)   (biography)
-              │               │               │
-              └───────────────┼───────────────┘
+                              ▼
+                        Spotify API
+                      (cover art, URLs)
+                              │
                               ▼
                      statsProvider.ts
                      (merge & enrich)
                               │
                               ▼
-                    Prisma / MySQL DB
+                    Prisma / Database
                               │
                               ▼
                       JSON API Routes
 ```
 
-1. **Scrape**  Kworb.net is scraped for top artists (by monthly listeners) and top tracks (by daily streams) across 20 countries
-2. **Enrich**  Each artist/track is enriched with Spotify IDs, images, genres, biographies, social links, and play counts
-3. **Store**  Data is persisted to MySQL with daily snapshots for historical tracking
-4. **Serve**  Clean JSON APIs expose the data with filtering, sorting, and pagination
+1. **Scrape**  Kworb.net is scraped for top daily tracks (by daily streams) across 20 countries
+2. **Enrich**  Each track is enriched with Spotify ID, cover art, preview URL, and Spotify link
+3. **Store**  Data is persisted to the database with daily snapshots for historical tracking
+4. **Serve**  Clean JSON APIs expose the data with filtering and country support
 
 ---
 

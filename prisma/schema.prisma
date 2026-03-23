@@ -10,79 +10,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model ArtistSnapshot {
-  id               String   @id @default(cuid())
-  artistName       String   @db.VarChar(255)
-  country          String   @default("global") @db.VarChar(10)
-  rank             Int
-  monthlyListeners Int
-  listenersDelta   Int?
-  createdAt        DateTime @default(now())
-  
-  @@index([createdAt])
-  @@index([artistName])
-  @@index([country])
-}
-
-model ArtistCurrent {
-  id               String   @id @default(cuid())
-  artistId         String?  @db.VarChar(255) // Spotify ID if matched
-  artistName       String   @db.VarChar(255)
-  country          String   @default("global") @db.VarChar(10) // "global" or country code like "id"
-  rank             Int
-  previousRank     Int?
-  rankDelta        Int?     // negative = moved up, positive = moved down
-  monthlyListeners Int
-  listenersDelta   Int?
-  imageUrl         String?  @db.VarChar(500)
-  genres           String?  @db.Text // JSON array as string
-  spotifyUrl       String?  @db.VarChar(500)
-  
-  // Enhanced metadata for About section
-  followers        Int?     // Spotify followers count
-  popularity       Int?     // Spotify popularity score (0-100)
-  images           String?  @db.Text // JSON array of image URLs with different sizes
-  biography        String?  @db.LongText // Artist biography from Wikipedia
-  socialLinks      String?  @db.Text // JSON object {facebook, instagram, twitter}
-  originCountry    String?  @db.VarChar(100) // Artist's country of origin
-  countryCode      String?  @db.VarChar(5) // ISO 3166-1 alpha-2 country code for flag
-  birthDate        String?  @db.VarChar(50) // Artist's birth date
-  
-  // Last.fm Data
-  topTracks        String?  @db.LongText // JSON array of top tracks {name, playcount, listeners, url, spotifyUrl, spotifyPlayCount}
-  topAlbums        String?  @db.LongText // JSON array of top albums {name, playcount, url, image}
-  similarArtists   String?  @db.Text // JSON array of similar artists {name, url, image}
-
-  peakRank         Int?
-  peakRankDate     DateTime?
-  firstSeenDate    DateTime?
-
-  lastUpdated      DateTime @default(now()) @updatedAt
-  
-  @@unique([artistName, country])
-  @@index([rank])
-  @@index([artistName])
-  @@index([country])
-}
-
-model BlogPost {
-  id        String   @id @default(cuid())
-  date      DateTime @unique // One post per day
-  headline  String   @db.VarChar(500)
-  content   String   @db.LongText // JSON string of the DailyBriefing object
-  createdAt DateTime @default(now())
-  
-  @@index([date])
-}
-
 model TrackSnapshot {
   id           String   @id @default(cuid())
   trackName    String   @db.VarChar(500)
   artistName   String   @db.VarChar(255)
   country      String   @default("global") @db.VarChar(10)
   rank         Int
-  dailyStreams BigInt
-  totalStreams BigInt?
+  dailyStreams  BigInt
+  totalStreams  BigInt?
   createdAt    DateTime @default(now())
   
   @@index([createdAt])
@@ -95,12 +30,12 @@ model TrackCurrent {
   trackId      String?  @db.VarChar(255) // Spotify ID if matched
   trackName    String   @db.VarChar(500)
   artistName   String   @db.VarChar(255)
-  country      String   @default("global") @db.VarChar(10) // "global" or country code like "id"
+  country      String   @default("global") @db.VarChar(10)
   rank         Int
   previousRank Int?
   rankDelta    Int?     // negative = moved up, positive = moved down
-  dailyStreams BigInt
-  totalStreams BigInt?
+  dailyStreams  BigInt
+  totalStreams  BigInt?
   imageUrl     String?  @db.VarChar(500)
   previewUrl   String?  @db.VarChar(500)
   spotifyUrl   String?  @db.VarChar(500)
