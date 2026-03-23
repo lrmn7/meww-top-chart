@@ -15,39 +15,8 @@ interface ApiEndpoint {
 const ENDPOINTS: ApiEndpoint[] = [
   {
     method: 'GET',
-    path: '/api/stats/artists',
-    description: 'Get top artists by rank or daily change',
-    params: [
-      { key: 'sortBy', default: 'rank', placeholder: 'rank | dailyChange' },
-      { key: 'country', default: 'global', placeholder: 'global, id, us, gb...' },
-      { key: 'limit', default: '25', placeholder: '25' },
-    ],
-    exampleResponse: {
-      artists: [
-        {
-          artistId: '1Xyo4u8uXC1ZmMpatF05PJ',
-          name: 'The Weeknd',
-          rank: 1,
-          previousRank: 1,
-          rankDelta: 0,
-          monthlyListeners: 115000000,
-          listenersDelta: 250000,
-          imageUrl: 'https://i.scdn.co/image/...',
-          genres: ['canadian pop', 'pop'],
-          spotifyUrl: 'https://open.spotify.com/artist/1Xyo4u8uXC1ZmMpatF05PJ',
-          lastUpdated: '2026-03-23T00:00:00.000Z',
-          followers: 45000000,
-          popularity: 96,
-          isNew: false,
-        },
-        { '...': 'more artists' },
-      ],
-    },
-  },
-  {
-    method: 'GET',
     path: '/api/stats/tracks',
-    description: 'Get top tracks by daily streams',
+    description: 'Get top daily tracks by streams',
     params: [
       { key: 'country', default: 'global', placeholder: 'global, id, us, gb...' },
       { key: 'limit', default: '25', placeholder: '25' },
@@ -55,19 +24,42 @@ const ENDPOINTS: ApiEndpoint[] = [
     exampleResponse: {
       tracks: [
         {
-          trackId: '7MXVkk9YMctZqd1Srtv4MB',
-          name: 'Starboy',
-          mainArtistName: 'The Weeknd',
+          trackId: '2plbrEY59IikOBgBGLjaoe',
+          name: 'Die With A Smile',
+          mainArtistName: 'Lady Gaga, Bruno Mars',
           rank: 1,
-          previousRank: 2,
-          rankDelta: -1,
+          previousRank: 1,
+          rankDelta: 0,
           dailyStreams: 8500000,
           totalStreams: 3200000000,
           imageUrl: 'https://i.scdn.co/image/...',
-          spotifyUrl: 'https://open.spotify.com/track/7MXVkk9YMctZqd1Srtv4MB',
+          previewUrl: 'https://p.scdn.co/mp3-preview/...',
+          spotifyUrl: 'https://open.spotify.com/track/2plbrEY59IikOBgBGLjaoe',
           lastUpdated: '2026-03-23T00:00:00.000Z',
         },
         { '...': 'more tracks' },
+      ],
+    },
+  },
+  {
+    method: 'GET',
+    path: '/api/stats/tracks/history',
+    description: 'Get track historical data',
+    params: [
+      { key: 'track', placeholder: 'e.g. Die With A Smile' },
+      { key: 'artist', placeholder: 'e.g. Lady Gaga' },
+      { key: 'country', default: 'global', placeholder: 'global, id, us...' },
+      { key: 'days', default: '30', placeholder: '30' },
+    ],
+    exampleResponse: {
+      trackName: 'Die With A Smile',
+      artistName: 'Lady Gaga, Bruno Mars',
+      country: 'global',
+      dataPoints: 30,
+      history: [
+        { date: '2026-03-23', dailyStreams: 8500000, totalStreams: 3200000000, rank: 1 },
+        { date: '2026-03-22', dailyStreams: 8200000, totalStreams: 3191500000, rank: 2 },
+        { '...': 'more data points' },
       ],
     },
   },
@@ -91,75 +83,6 @@ const ENDPOINTS: ApiEndpoint[] = [
     description: 'Get last data refresh timestamp',
     exampleResponse: {
       lastUpdated: '2026-03-23T06:00:00.000Z',
-    },
-  },
-  {
-    method: 'GET',
-    path: '/api/stats/artist/{artistId}',
-    description: 'Get detailed artist info by Spotify ID',
-    params: [
-      { key: 'artistId', placeholder: 'e.g. 1Xyo4u8uXC1ZmMpatF05PJ' },
-    ],
-    exampleResponse: {
-      artist: {
-        artistId: '1Xyo4u8uXC1ZmMpatF05PJ',
-        name: 'The Weeknd',
-        rank: 1,
-        monthlyListeners: 115000000,
-        followers: 45000000,
-        popularity: 96,
-        biography: 'Abel Makkonen Tesfaye, known professionally as the Weeknd...',
-        originCountry: 'Canada',
-        countryCode: 'CA',
-        genres: ['canadian pop', 'pop'],
-        images: '[{"url":"https://...","height":640,"width":640}]',
-        topTracks: '[{"name":"Blinding Lights","playcount":"3800000000",...}]',
-        topAlbums: '[{"name":"After Hours","playcount":"12000000",...}]',
-        similarArtists: '[{"name":"Drake",...}]',
-        socialLinks: '{"homepage":"https://...","instagram":"https://..."}',
-      },
-    },
-  },
-  {
-    method: 'GET',
-    path: '/api/stats/artist/{artistId}/history',
-    description: 'Get artist historical data',
-    params: [
-      { key: 'artistId', placeholder: 'e.g. 1Xyo4u8uXC1ZmMpatF05PJ' },
-      { key: 'country', default: 'global', placeholder: 'global, id, us...' },
-      { key: 'days', default: '30', placeholder: '30' },
-    ],
-    exampleResponse: {
-      artistName: 'The Weeknd',
-      country: 'global',
-      dataPoints: 30,
-      history: [
-        { date: '2026-03-23', monthlyListeners: 115000000, rank: 1, listenersDelta: 250000 },
-        { date: '2026-03-22', monthlyListeners: 114750000, rank: 1, listenersDelta: 180000 },
-        { '...': 'more data points' },
-      ],
-    },
-  },
-  {
-    method: 'GET',
-    path: '/api/stats/tracks/history',
-    description: 'Get track historical data',
-    params: [
-      { key: 'track', placeholder: 'e.g. Starboy' },
-      { key: 'artist', placeholder: 'e.g. The Weeknd' },
-      { key: 'country', default: 'global', placeholder: 'global, id, us...' },
-      { key: 'days', default: '30', placeholder: '30' },
-    ],
-    exampleResponse: {
-      trackName: 'Starboy',
-      artistName: 'The Weeknd',
-      country: 'global',
-      dataPoints: 30,
-      history: [
-        { date: '2026-03-23', dailyStreams: 8500000, totalStreams: 3200000000, rank: 1 },
-        { date: '2026-03-22', dailyStreams: 8200000, totalStreams: 3191500000, rank: 2 },
-        { '...': 'more data points' },
-      ],
     },
   },
   {
@@ -291,7 +214,7 @@ export default function Home() {
         <div className="sidebar">
           <div className="sidebar-header">
             <h1>Meww.me <span>API</span> Explorer</h1>
-            <p>Spotify Stats API • Scraper from Kworb</p>
+            <p>Spotify Top Daily Tracks • Scraped from Kworb</p>
           </div>
           <div className="ep-list">
             {ENDPOINTS.map((ep, i) => (
