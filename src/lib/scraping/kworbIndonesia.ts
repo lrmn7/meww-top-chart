@@ -1,6 +1,6 @@
 import 'server-only';
 import * as cheerio from 'cheerio';
-import { ArtistStatRaw, TrackStatRaw } from '../types';
+import { TrackStatRaw } from '../types';
 
 /**
  * Scrapes kworb.net for Indonesia daily Spotify chart
@@ -81,63 +81,6 @@ export async function scrapeKworbIndonesiaDailyTracks(): Promise<TrackStatRaw[]>
 }
 
 /**
- * Aggregates artist data from Indonesia daily tracks to create artist rankings
- * This creates a proxy for "monthly listeners" by aggregating daily streams
- */
-export async function scrapeKworbIndonesiaArtists(): Promise<ArtistStatRaw[]> {
-  try {
-    const tracks = await scrapeKworbIndonesiaDailyTracks();
-    
-    // Aggregate by artist
-    const artistMap = new Map<string, { streams: number; tracks: number; rank: number }>();
-    
-    tracks.forEach((track, index) => {
-      const existing = artistMap.get(track.artistName);
-      if (existing) {
-        existing.streams += track.dailyStreams;
-        existing.tracks += 1;
-        // Keep the best (lowest) rank
-        if (track.rank < existing.rank) {
-          existing.rank = track.rank;
-        }
-      } else {
-        artistMap.set(track.artistName, {
-          streams: track.dailyStreams,
-          tracks: 1,
-          rank: track.rank,
-        });
-      }
-    });
-    
-    // Convert to array and sort by total streams (descending)
-    const artists = Array.from(artistMap.entries())
-      .map(([name, data]) => ({
-        name,
-        rank: data.rank, // Use best rank as primary rank
-        monthlyListeners: data.streams, // Use aggregated daily streams as proxy
-        listenersDelta: undefined, // Not available from daily chart
-      }))
-      .sort((a, b) => {
-        // Sort by streams descending, then by rank ascending
-        if (b.monthlyListeners !== a.monthlyListeners) {
-          return b.monthlyListeners - a.monthlyListeners;
-        }
-        return a.rank - b.rank;
-      })
-      .map((artist, index) => ({
-        ...artist,
-        rank: index + 1, // Re-rank based on aggregated streams
-      }));
-    
-    const limit = parseInt(process.env.TOP_ARTISTS_LIMIT || '25', 10);
-    return artists.slice(0, limit);
-  } catch (error) {
-    console.error('Error aggregating Indonesia artists:', error);
-    throw new Error(`Failed to aggregate Indonesia artists: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-
-/**
  * Parses a number string that may contain commas, decimals, or units (M, K)
  */
 function parseNumber(text: string): number {
@@ -159,4 +102,3 @@ function parseNumber(text: string): number {
   const num = parseFloat(cleaned);
   return isNaN(num) ? 0 : Math.round(num * multiplier);
 }
-
