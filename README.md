@@ -234,13 +234,104 @@ Kworb.net  ──scrape──▶  Raw Track Chart Data
 
 ---
 
-## Data Refresh
+## Deployment Guide
 
-Data is refreshed via the `/api/cron/refresh` endpoint:
+This project uses a **hybrid architecture**:
+- **GitHub Actions** handles data scraping (runs on GitHub servers, no time limits)
+- **Vercel** serves the JSON API (fast, serverless)
+- **MySQL database** stores all track data (shared between both)
 
-- **Vercel Cron**  Automatically runs at 00:00 and 12:00 UTC daily (configured in `vercel.json`)
-- **Manual**  Call `GET /api/cron/refresh?secret=YOUR_ADMIN_SECRET`
-- **Script**  Run `node refresh-data.js` directly
+### Step 1: Setup GitHub Repository
+
+1. Fork or push this repo to your GitHub account
+
+2. Go to **Settings → Secrets and variables → Actions** and add these secrets:
+
+   | Secret | Description | Example |
+   |--------|-------------|---------|
+   | `DATABASE_URL` | MySQL connection string | `mysql://user:pass@host:3306/dbname` |
+   | `SPOTIFY_CLIENT_ID` | Spotify app client ID | From [Spotify Dashboard](https://developer.spotify.com/dashboard) |
+   | `SPOTIFY_CLIENT_SECRET` | Spotify app client secret | From Spotify Dashboard |
+   | `SCRAPE_COUNTRIES` | Countries to scrape | `global,id,us,gb,jp,kr` |
+   | `TOP_TRACKS_LIMIT` | Max tracks per country | `25` |
+   | `ADMIN_SECRET` | (Optional) Secret for manual API refresh | Any secure string |
+
+   > **Optional:** Add `SPOTIFY_CLIENT_ID_2`, `SPOTIFY_CLIENT_SECRET_2`, etc. for rate limit rotation
+
+3. Make sure your MySQL database is accessible from GitHub Actions (public endpoint or allowlisted IPs)
+
+### Step 2: First Data Refresh
+
+Run the workflow manually to populate your database for the first time:
+
+1. Go to **Actions** tab in your GitHub repo
+2. Click **"Daily Stats Refresh"** workflow on the left
+3. Click **"Run workflow"** → **"Run workflow"** (green button)
+4. Wait for it to complete (~2-5 minutes)
+
+This will scrape all configured countries and store track data in your database.
+
+### Step 3: Deploy API to Vercel
+
+1. Import your GitHub repo on [vercel.com/new](https://vercel.com/new)
+
+2. Add the same environment variables in Vercel dashboard:
+   - `DATABASE_URL`
+   - `SPOTIFY_CLIENT_ID`
+   - `SPOTIFY_CLIENT_SECRET`
+   - `ADMIN_SECRET`
+
+3. Deploy! Your API is now live at `https://your-project.vercel.app`
+
+### Step 4: Done! 🎉
+
+After the initial setup:
+- **GitHub Actions** automatically refreshes data **twice daily** at 06:00 and 18:00 UTC (configurable in `.github/workflows/refresh-cron.yml`)
+- **Vercel** serves fresh data from the database via API routes
+- You can trigger a manual refresh anytime from the GitHub Actions tab
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────┐
+│        GitHub Actions           │
+│   (cron: 06:00 & 18:00 UTC)    │
+│                                 │
+│  1. Scrape Kworb.net            │
+│  2. Enrich via Spotify API      │
+│  3. Write to MySQL              │
+└──────────────┬──────────────────┘
+               │ writes
+               ▼
+┌─────────────────────────────────┐
+│         MySQL Database          │
+│   TrackCurrent + TrackSnapshot  │
+└──────────────┬──────────────────┘
+               │ reads
+               ▼
+┌─────────────────────────────────┐
+│        Vercel (API)             │
+│                                 │
+│  /api/stats/tracks              │
+│  /api/stats/tracks/history      │
+│  /api/stats/countries           │
+│  /api/stats/last-updated        │
+└──────────────┬──────────────────┘
+               │
+               ▼
+         Discord Bot / Client
+```
+
+### Cron Schedule
+
+Edit `.github/workflows/refresh-cron.yml` to change the refresh schedule:
+
+```yaml
+schedule:
+  - cron: '0 6,18 * * *'  # 06:00 & 18:00 UTC (13:00 & 01:00 WIB)
+```
+
+You can also trigger manually: **Actions → Daily Stats Refresh → Run workflow**
 
 ---
 
@@ -261,19 +352,7 @@ Data is refreshed via the `/api/cron/refresh` endpoint:
 
 ---
 
-## Deployment
-
-### Vercel
-
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel --prod
-```
-
-Set environment variables in Vercel dashboard. Cron jobs are configured in `vercel.json`.
+## Alternative Deployment
 
 ### Hostinger / Custom Node.js
 
